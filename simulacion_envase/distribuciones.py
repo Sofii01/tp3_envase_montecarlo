@@ -72,8 +72,8 @@ class GeneradorNormalBoxMuller:
         z1 = factor * math.cos(angulo)
         z2 = factor * math.sin(angulo)
 
-        n1 = self.media + z1 * self.desviacion
-        n2 = self.media + z2 * self.desviacion
+        n1 = max(0.0, self.media + z1 * self.desviacion)
+        n2 = max(0.0, self.media + z2 * self.desviacion)
 
         self._pendiente = SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N2", valor=n2)
         return SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N1", valor=n1)

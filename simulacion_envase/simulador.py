@@ -93,9 +93,9 @@ class SimuladorEnvase:
             else 0.0
         )
 
-        sorteo_normal = self.generador_normal.sortear()
-        tiempo_por_sector = sorteo_normal.valor
-        tiempo_base_traslado = tiempo_por_sector * cantidad_sectores
+        sorteos_normales = [self.generador_normal.sortear() for _ in range(cantidad_sectores)]
+        tiempo_por_sector = sum(sorteo.valor for sorteo in sorteos_normales) / cantidad_sectores
+        tiempo_base_traslado = sum(sorteo.valor for sorteo in sorteos_normales)
 
         demora_congestion = tiempo_base_traslado * parametros.aumento_congestion if hay_congestion else 0.0
         tiempo_parcial_paradas_auditorias = demora_escaneo + demora_auditoria
@@ -116,9 +116,9 @@ class SimuladorEnvase:
             hay_auditoria=hay_auditoria,
             rnd_demora_auditoria=rnd_demora_auditoria,
             demora_auditoria=demora_auditoria,
-            rnd1_tiempo_base=sorteo_normal.rnd1,
-            rnd2_tiempo_base=sorteo_normal.rnd2,
-            normal_usada=sorteo_normal.normal_usada,
+            rnd1_tiempo_base=sorteos_normales[0].rnd1,
+            rnd2_tiempo_base=sorteos_normales[0].rnd2,
+            normal_usada=f"N1..N{cantidad_sectores}",
             tiempo_por_sector=tiempo_por_sector,
             tiempo_base_traslado=tiempo_base_traslado,
             demora_congestion=demora_congestion,

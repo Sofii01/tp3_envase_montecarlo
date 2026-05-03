@@ -80,7 +80,7 @@ with st.sidebar:
 
     media_demora_escaneo = st.number_input("Media demora escaneo", min_value=0.0, value=4.0, step=0.1)
     media_demora_auditoria = st.number_input("Media demora auditoría", min_value=0.0, value=5.0, step=0.1)
-    media_tiempo_sector = st.number_input("Media tiempo por sector", value=4.0, step=0.1)
+    media_tiempo_sector = st.number_input("Media tiempo por sector", min_value=0.0, value=4.0, step=0.1)
     desviacion_tiempo_sector = st.number_input("Desvío tiempo por sector", min_value=0.0, value=85 / 60, step=0.01, format="%.6f")
     aumento_congestion = st.number_input("Aumento por congestión", min_value=0.0, value=0.60, step=0.05)
 

@@ -55,6 +55,7 @@ class ParametrosSimulacion:
         for nombre, valor in [
             ("media_demora_escaneo", self.media_demora_escaneo),
             ("media_demora_auditoria", self.media_demora_auditoria),
+            ("media_tiempo_sector", self.media_tiempo_sector),
             ("desviacion_tiempo_sector", self.desviacion_tiempo_sector),
             ("aumento_congestion", self.aumento_congestion),
         ]:
