@@ -48,6 +48,9 @@ class GeneradorNormalBoxMuller:
 
     La primera llamada devuelve N1 y guarda N2.
     La siguiente llamada devuelve N2, reutilizando los mismos RND.
+
+    Si el tiempo generado es negativo, se descarta ese valor y se genera otro.
+    No se trunca a cero porque eso deformaría la distribución.
     """
 
     def __init__(self, generador: GeneradorAleatorio, media: float, desviacion: float) -> None:
@@ -57,23 +60,39 @@ class GeneradorNormalBoxMuller:
         self._pendiente: SorteoNormal | None = None
 
     def sortear(self) -> SorteoNormal:
-        """Devuelve un valor normal y los RND que lo originaron."""
-        if self._pendiente is not None:
-            pendiente = self._pendiente
+        """Devuelve un valor normal no negativo y los RND que lo originaron."""
+        intentos = 0
+
+        while True:
+            intentos += 1
+            if intentos > 100_000:
+                raise RuntimeError("No se pudo generar un tiempo normal no negativo.")
+
+            if self._pendiente is not None:
+                pendiente = self._pendiente
+                self._pendiente = None
+                if pendiente.valor >= 0.0:
+                    return pendiente
+                # Si el valor pendiente dio negativo, se descarta y se genera otro par.
+
+            rnd1 = self.generador.rnd_abierto_0_1()
+            rnd2 = self.generador.rnd()
+
+            factor = math.sqrt(-2 * math.log(rnd1))
+            angulo = 2 * math.pi * rnd2
+
+            z1 = factor * math.cos(angulo)
+            z2 = factor * math.sin(angulo)
+
+            n1 = self.media + z1 * self.desviacion
+            n2 = self.media + z2 * self.desviacion
+
+            # Se guarda N2 solo si es válido. Si N2 es negativo, se descarta
+            # cuando corresponda generar el siguiente valor.
+            self._pendiente = SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N2", valor=n2)
+
+            if n1 >= 0.0:
+                return SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N1", valor=n1)
+
+            # Si N1 dio negativo, se descarta todo el par y se genera otro.
             self._pendiente = None
-            return pendiente
-
-        rnd1 = self.generador.rnd_abierto_0_1()
-        rnd2 = self.generador.rnd()
-
-        factor = math.sqrt(-2 * math.log(rnd1))
-        angulo = 2 * math.pi * rnd2
-
-        z1 = factor * math.cos(angulo)
-        z2 = factor * math.sin(angulo)
-
-        n1 = max(0.0, self.media + z1 * self.desviacion)
-        n2 = max(0.0, self.media + z2 * self.desviacion)
-
-        self._pendiente = SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N2", valor=n2)
-        return SorteoNormal(rnd1=rnd1, rnd2=rnd2, normal_usada="N1", valor=n1)

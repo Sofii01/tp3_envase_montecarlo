@@ -12,6 +12,7 @@ class Acumuladores:
     acumulador_demora_escaneo: float = 0.0
     acumulador_demora_congestion: float = 0.0
     acumulador_tiempo_total: float = 0.0
+    acumulador_tiempo_total_con_congestion: float = 0.0
 
     contador_congestion: int = 0
     contador_parada_y_auditoria: int = 0
@@ -33,6 +34,7 @@ class Acumuladores:
 
         if fila.hay_congestion:
             self.contador_congestion += 1
+            self.acumulador_tiempo_total_con_congestion += fila.tiempo_total
         if fila.hay_parada:
             self.contador_paradas_escaneo += 1
         if fila.hay_auditoria:
@@ -40,7 +42,7 @@ class Acumuladores:
         if fila.hay_parada and fila.hay_auditoria:
             self.contador_parada_y_auditoria += 1
 
-        # Supuesto actual: la congestión solo agrega demora; no cuenta como detención.
+        # Criterio actual: la congestión agrega demora, pero no cuenta como detención.
         if not fila.hay_parada and not fila.hay_auditoria:
             self.contador_sin_parada_ni_auditoria += 1
 
@@ -92,6 +94,8 @@ class FilaEstado:
     acumulador_demora_escaneo: float = 0.0
     acumulador_demora_congestion: float = 0.0
     acumulador_tiempo_total: float = 0.0
+    promedio_tiempo: float = 0.0
+    acumulador_tiempo_total_con_congestion: float = 0.0
 
     contador_congestion: int = 0
     contador_parada_y_auditoria: int = 0
@@ -108,6 +112,8 @@ class FilaEstado:
         self.acumulador_demora_escaneo = acumuladores.acumulador_demora_escaneo
         self.acumulador_demora_congestion = acumuladores.acumulador_demora_congestion
         self.acumulador_tiempo_total = acumuladores.acumulador_tiempo_total
+        self.promedio_tiempo = acumuladores.acumulador_tiempo_total / self.jornada
+        self.acumulador_tiempo_total_con_congestion = acumuladores.acumulador_tiempo_total_con_congestion
         self.contador_congestion = acumuladores.contador_congestion
         self.contador_parada_y_auditoria = acumuladores.contador_parada_y_auditoria
         self.contador_sin_parada_ni_auditoria = acumuladores.contador_sin_parada_ni_auditoria
@@ -121,38 +127,43 @@ class FilaEstado:
         return "SI" if valor else "NO"
 
     @staticmethod
+    def _redondear(valor: float, decimales: int = 4) -> float:
+        return round(valor, decimales)
+
+    @staticmethod
     def _opcional(valor: float | None) -> float | str:
-        return "" if valor is None else valor
+        return "" if valor is None else round(valor, 4)
 
     def a_diccionario_visible(self) -> dict[str, Any]:
         """Devuelve la fila con nombres de columnas pensados para pantalla y Excel."""
         return {
             "JORNADA DE OPERACIÓN": self.jornada,
-            "RND CIRCUITO": self.rnd_circuito,
+            "RND CIRCUITO": self._redondear(self.rnd_circuito),
             "CANTIDAD DE SECTORES": self.cantidad_sectores,
-            "RND PARADA": self.rnd_parada,
+            "RND PARADA": self._redondear(self.rnd_parada),
             "HAY PARADA": self._si_no(self.hay_parada),
             "RND DEMORA PARADA": self._opcional(self.rnd_demora_parada),
             "DEMORA ADICIONAL POR ESCANEO O REGISTRO": self.demora_escaneo,
             "RECORRIDO DE 2 O 5 SECTORES": self._si_no(self.recorrido_2_o_5_sectores),
             "RND CONGESTIÓN": self._opcional(self.rnd_congestion),
             "HAY CONGESTIÓN": self._si_no(self.hay_congestion),
-            "RND AUDITORÍA": self.rnd_auditoria,
+            "RND AUDITORÍA": self._redondear(self.rnd_auditoria),
             "HAY AUDITORÍA": self._si_no(self.hay_auditoria),
             "RND DEMORA AUDITORÍA": self._opcional(self.rnd_demora_auditoria),
             "DEMORA ADICIONAL POR AUDITORÍA": self.demora_auditoria,
-            "RND1 TIEMPO BASE": self.rnd1_tiempo_base,
-            "RND2 TIEMPO BASE": self.rnd2_tiempo_base,
+            "RND1 TIEMPO BASE": self._redondear(self.rnd1_tiempo_base),
+            "RND2 TIEMPO BASE": self._redondear(self.rnd2_tiempo_base),
             "NORMAL USADA": self.normal_usada,
             "TIEMPO POR SECTOR": self.tiempo_por_sector,
             "TIEMPO BASE DE TRASLADO": self.tiempo_base_traslado,
-            "TIEMPO ADICIONAL DE DEMORA POR CONGESTIÓN": self.demora_congestion,
             "TIEMPO PARCIAL CON PARADAS Y AUDITORÍAS": self.tiempo_parcial_paradas_auditorias,
+            "TIEMPO ADICIONAL DE DEMORA POR CONGESTIÓN": self.demora_congestion,
             "TIEMPO TOTAL": self.tiempo_total,
             "ACUMULADOR DEMORA POR AUDITORÍA": self.acumulador_demora_auditoria,
             "ACUMULADOR DEMORA POR ESCANEO Y REGISTRO": self.acumulador_demora_escaneo,
             "ACUMULADOR DEMORA POR CONGESTIÓN": self.acumulador_demora_congestion,
             "ACUMULADOR DE TIEMPOS DE TRASLADO": self.acumulador_tiempo_total,
+            "PROMEDIO TIEMPO": self.promedio_tiempo,
             "CONTADOR DE RECORRIDO CON CONGESTIÓN": self.contador_congestion,
             "CONTADOR RECORRIDO CON PARADAS Y AUDITORÍAS": self.contador_parada_y_auditoria,
             "CONTADOR RECORRIDO SIN PARADAS Y AUDITORÍAS": self.contador_sin_parada_ni_auditoria,
@@ -160,6 +171,7 @@ class FilaEstado:
             "CONTADOR AUDITORÍAS": self.contador_auditorias,
             "TIEMPO MÁXIMO DE TRASLADO": self.tiempo_maximo_total,
             "TIEMPO MÍNIMO DE TRASLADO": self.tiempo_minimo_total,
+            "ACUMULADOR TIEMPO TOTAL CON CONGESTIÓN": self.acumulador_tiempo_total_con_congestion,
         }
 
 
@@ -192,6 +204,11 @@ class ResultadoSimulacion:
             "Variable adicional 3 - Promedio demora auditoría cuando hubo auditoría": (
                 final.acumulador_demora_auditoria / final.contador_auditorias
                 if final.contador_auditorias
+                else 0.0
+            ),
+            "Variable adicional 4 - Promedio traslado cuando hubo congestión": (
+                final.acumulador_tiempo_total_con_congestion / final.contador_congestion
+                if final.contador_congestion
                 else 0.0
             ),
         }
