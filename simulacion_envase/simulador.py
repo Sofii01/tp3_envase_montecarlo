@@ -69,7 +69,7 @@ class SimuladorEnvase:
         recorrido_2_o_5 = cantidad_sectores in (2, 5)
 
         rnd_parada = self.generador.rnd()
-        hay_parada = rnd_parada < parametros.prob_parada_escaneo
+        hay_parada = rnd_parada <= parametros.prob_parada_escaneo
         rnd_demora_parada = self.generador.rnd() if hay_parada else None
         demora_escaneo = (
             exponencial_desde_rnd(parametros.media_demora_escaneo, rnd_demora_parada)
@@ -79,13 +79,13 @@ class SimuladorEnvase:
 
         if recorrido_2_o_5:
             rnd_congestion = self.generador.rnd()
-            hay_congestion = rnd_congestion < parametros.prob_congestion
+            hay_congestion = rnd_congestion <= parametros.prob_congestion
         else:
             rnd_congestion = None
             hay_congestion = False
 
         rnd_auditoria = self.generador.rnd()
-        hay_auditoria = rnd_auditoria < parametros.prob_auditoria
+        hay_auditoria = rnd_auditoria <= parametros.prob_auditoria
         rnd_demora_auditoria = self.generador.rnd() if hay_auditoria else None
         demora_auditoria = (
             exponencial_desde_rnd(parametros.media_demora_auditoria, rnd_demora_auditoria)
@@ -93,13 +93,18 @@ class SimuladorEnvase:
             else 0.0
         )
 
-        sorteos_normales = [self.generador_normal.sortear() for _ in range(cantidad_sectores)]
-        tiempo_por_sector = sum(sorteo.valor for sorteo in sorteos_normales) / cantidad_sectores
-        tiempo_base_traslado = sum(sorteo.valor for sorteo in sorteos_normales)
+        sorteo_normal = self.generador_normal.sortear()
+        tiempo_por_sector = sorteo_normal.valor
+        tiempo_base_traslado = tiempo_por_sector * cantidad_sectores
 
-        demora_congestion = tiempo_base_traslado * parametros.aumento_congestion if hay_congestion else 0.0
         tiempo_parcial_paradas_auditorias = demora_escaneo + demora_auditoria
-        tiempo_total = tiempo_base_traslado + demora_congestion + tiempo_parcial_paradas_auditorias
+
+        # Criterio adoptado por el grupo para coincidir con el Excel final:
+        # la congestión aumenta el 60% del tiempo base más las demoras por
+        # parada/auditoría ocurridas en el recorrido.
+        base_para_congestion = tiempo_base_traslado + tiempo_parcial_paradas_auditorias
+        demora_congestion = base_para_congestion * parametros.aumento_congestion if hay_congestion else 0.0
+        tiempo_total = tiempo_base_traslado + tiempo_parcial_paradas_auditorias + demora_congestion
 
         return FilaEstado(
             jornada=jornada,
@@ -116,9 +121,9 @@ class SimuladorEnvase:
             hay_auditoria=hay_auditoria,
             rnd_demora_auditoria=rnd_demora_auditoria,
             demora_auditoria=demora_auditoria,
-            rnd1_tiempo_base=sorteos_normales[0].rnd1,
-            rnd2_tiempo_base=sorteos_normales[0].rnd2,
-            normal_usada=f"N1..N{cantidad_sectores}",
+            rnd1_tiempo_base=sorteo_normal.rnd1,
+            rnd2_tiempo_base=sorteo_normal.rnd2,
+            normal_usada=sorteo_normal.normal_usada,
             tiempo_por_sector=tiempo_por_sector,
             tiempo_base_traslado=tiempo_base_traslado,
             demora_congestion=demora_congestion,

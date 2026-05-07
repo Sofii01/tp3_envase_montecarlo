@@ -26,12 +26,17 @@ st.markdown(
             font-weight: 800;
             margin-bottom: 0.2rem;
         }
+        .subtitle {
+            color: #6B7280;
+            font-size: 0.98rem;
+            margin-bottom: 1.1rem;
+        }
         div[data-testid="stMetric"] {
             background: var(--background-color, transparent);
             border: 1px solid var(--secondary-background-color, #e5e7eb);
             padding: 0.4rem 0.6rem;
             border-radius: 0.6rem;
-            box-shadow: 0 1px 3px rgba(16,24,40,.08);
+            box-shadow: 0 1px 3px rgba(16,24,40,0.08);
         }
         div[data-testid="stMetricValue"] {
             font-size: 1rem;
@@ -44,61 +49,12 @@ st.markdown(
             border-radius: 1rem;
             padding: .9rem 1rem;
         }
-        section[data-testid="stSidebar"] {
-            width: 600px !important;
-        }
-        section[data-testid="stSidebar"] > div:first-child {
-            width: 600px !important;
-        }
         .sidebar-label {
             font-size: 0.85rem;
             font-weight: 600;
             margin-top: 0.5rem;
             margin-bottom: 0.15rem;
             color: #6B7280;
-        }
-        section[data-testid="stSidebar"][aria-expanded="false"] {
-            width: 0px !important;
-            min-width: 0px !important;
-        }
-        section[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
-            width: 0px !important;
-            min-width: 0px !important;
-            padding: 0px !important;
-        }
-        div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"] {
-            align-items: flex-start !important;
-        }
-        div[data-testid="column"] {
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: flex-start !important;
-        }
-        .sidebar-label {
-            margin-bottom: 0.5rem !important;
-        }
-        div[data-testid="stNumberInput"] {
-            margin-top: 0rem !important;
-        }
-        .metric-gris + div[data-testid="stMetric"] {
-            background: #f3f4f6 !important;
-        }
-        section[data-testid="stSidebar"] > div > div:first-child {
-            position: sticky !important;
-            top: 0 !important;
-            z-index: 999 !important;
-            background: var(--background-color) !important;
-        }
-        section[data-testid="stSidebar"] button[kind="headerNoPadding"],
-        section[data-testid="stSidebar"] button[aria-label*="Close"],
-        section[data-testid="stSidebar"] button[aria-label*="Open"] {
-            position: fixed !important;
-            top: 0.5rem !important;
-            left: 560px !important;
-            z-index: 999 !important;
-        }
-        section[data-testid="stSidebar"][aria-expanded="false"] button[aria-label*="Open"] {
-            left: 0.5rem !important;
         }
     </style>
     """,
@@ -107,6 +63,10 @@ st.markdown(
 
 st.markdown(
     '<div class="main-title">Simulación Montecarlo - Sistema de Envaso</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="subtitle">Vector de estado visual con fila inicial, 200 filas posteriores y fila N.</div>',
     unsafe_allow_html=True,
 )
 
@@ -133,7 +93,7 @@ with st.sidebar:
         st.markdown('<div class="sidebar-label" style="visibility: hidden;">Sectores</div>', unsafe_allow_html=True)
         prob_circuito_4 = st.number_input("P(circuito 4 sectores)", min_value=0.0, max_value=1.0, value=0.50, step=0.01)
 
-    col_izq, col_der = st.columns(2)
+    col_izq, _ = st.columns(2)
     with col_izq:
         prob_circuito_5 = st.number_input("P(circuito 5 sectores)", min_value=0.0, max_value=1.0, value=0.25, step=0.01)
 
@@ -145,7 +105,7 @@ with st.sidebar:
         st.markdown('<div class="sidebar-label">Congestión</div>', unsafe_allow_html=True)
         prob_congestion = st.number_input("P(congestión en 2 o 5 sectores)", min_value=0.0, max_value=1.0, value=0.35, step=0.01)
 
-    col_izq, col_der = st.columns(2)
+    col_izq, _ = st.columns(2)
     with col_izq:
         st.markdown('<div class="sidebar-label">Auditoría</div>', unsafe_allow_html=True)
         prob_auditoria = st.number_input("P(auditoría)", min_value=0.0, max_value=1.0, value=40 / 180, step=0.001, format="%.6f")
@@ -196,37 +156,51 @@ except Exception as error:
     st.error(f"No se pudo ejecutar la simulación: {error}")
     st.stop()
 
+"""
+Soporte formato horario
+"""
+def formato_tiempo(minutos_decimal):
+    """Convierte minutos decimales a formato MM:SS o HH:MM:SS"""
+    if minutos_decimal is None or minutos_decimal < 0:
+        return "0:00"
+    
+    if minutos_decimal < 60:
+        minutos = int(minutos_decimal)
+        segundos = int((minutos_decimal - minutos) * 60)
+        return f"{minutos}:{segundos:02d}"
+    else:
+        horas = int(minutos_decimal // 60)
+        minutos = int(minutos_decimal % 60)
+        segundos = int((minutos_decimal - int(minutos_decimal)) * 60)
+        return f"{horas}:{minutos:02d}:{segundos:02d}"
+
+
 resultados = resultado.resultados_solicitados()
 
-st.subheader("Resultados")
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Promedio traslado", f"{resultados['Tiempo promedio de traslado']:.4f} min")
+#convertir
+tiempo_promedio_fmt = formato_tiempo(resultados['Tiempo promedio de traslado'])
+tiempo_maximo_fmt = formato_tiempo(resultados['Tiempo máximo de traslado'])
+tiempo_minimo_fmt = formato_tiempo(resultados['Tiempo mínimo de traslado'])
+prom_escaneo_fmt = formato_tiempo(resultados['Variable adicional 2 - Promedio demora escaneo cuando hubo parada'])
+prom_auditoria_fmt = formato_tiempo(resultados['Variable adicional 3 - Promedio demora auditoría cuando hubo auditoría'])
+resultados = resultado.resultados_solicitados()
+
+st.subheader("Resultados solicitados")
+c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric("Promedio traslado", formato_tiempo(resultados['Tiempo promedio de traslado'])) 
 c2.metric("% parada + auditoría", f"{resultados['Porcentaje con parada y auditoría']:.2f}%")
 c3.metric("Sin parada ni auditoría", f"{resultados['Cantidad sin parada ni auditoría']}")
-c4.metric("Máximo", f"{resultados['Tiempo máximo de traslado']:.4f} min")
+c4.metric("Tiempo máximo", formato_tiempo(resultados['Tiempo máximo de traslado']))
+c5.metric("Tiempo mínimo", formato_tiempo(resultados['Tiempo mínimo de traslado']))
 
-c5, c6, c7, c8 = st.columns(4)
-c5.metric("Mínimo", f"{resultados['Tiempo mínimo de traslado']:.4f} min")
-c6.markdown(
-    f"""<div style="background: #f3f4f6; border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; border-radius: 0.6rem; box-shadow: 0 1px 3px rgba(16,24,40,.08);">
-        <div style="font-size: 0.75rem; color: rgb(49,51,63);">% con congestión</div>
-        <div style="font-size: 1rem; font-weight: 600; color: rgb(49,51,63);">{resultados['Variable adicional 1 - Porcentaje con congestión']:.2f}%</div>
-    </div>""",
-    unsafe_allow_html=True,
-)
-c7.markdown(
-    f"""<div style="background: #f3f4f6; border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; border-radius: 0.6rem; box-shadow: 0 1px 3px rgba(16,24,40,.08);">
-        <div style="font-size: 0.75rem; color: rgb(49,51,63);">Prom. demora escaneo</div>
-        <div style="font-size: 1rem; font-weight: 600; color: rgb(49,51,63);">{resultados['Variable adicional 2 - Promedio demora escaneo cuando hubo parada']:.4f} min</div>
-    </div>""",
-    unsafe_allow_html=True,
-)
-c8.markdown(
-    f"""<div style="background: #f3f4f6; border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; border-radius: 0.6rem; box-shadow: 0 1px 3px rgba(16,24,40,.08);">
-        <div style="font-size: 0.75rem; color: rgb(49,51,63);">Prom. demora auditoría</div>
-        <div style="font-size: 1rem; font-weight: 600; color: rgb(49,51,63);">{resultados['Variable adicional 3 - Promedio demora auditoría cuando hubo auditoría']:.4f} min</div>
-    </div>""",
-    unsafe_allow_html=True,
+st.subheader("Variables adicionales propuestas")
+a1, a2, a3, a4 = st.columns(4)
+a1.metric("% con congestión", f"{resultados['Variable adicional 1 - Porcentaje con congestión']:.2f}%")
+a2.metric("Prom. demora escaneo", formato_tiempo(resultados['Variable adicional 2 - Promedio demora escaneo cuando hubo parada']))
+a3.metric("Prom. demora auditoría", formato_tiempo(resultados['Variable adicional 3 - Promedio demora auditoría cuando hubo auditoría']))
+a4.metric(
+    "Prom. traslado con congestión",
+    f"{resultados['Variable adicional 4 - Promedio traslado cuando hubo congestión']:.2f} min",
 )
 
 vector_visible = pd.DataFrame([fila.a_diccionario_visible() for fila in resultado.filas_seleccionadas])

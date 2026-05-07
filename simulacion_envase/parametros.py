@@ -40,17 +40,20 @@ class ParametrosSimulacion:
         if self.fila_inicial < 1 or self.fila_inicial > self.cantidad_jornadas:
             raise ValueError("La fila inicial debe estar entre 1 y N.")
 
-        suma_circuitos = self.prob_circuito_2 + self.prob_circuito_4 + self.prob_circuito_5
-        if abs(suma_circuitos - 1.0) > 1e-9:
-            raise ValueError("Las probabilidades de los circuitos deben sumar 1.")
-
         for nombre, valor in [
+            ("prob_circuito_2", self.prob_circuito_2),
+            ("prob_circuito_4", self.prob_circuito_4),
+            ("prob_circuito_5", self.prob_circuito_5),
             ("prob_parada_escaneo", self.prob_parada_escaneo),
             ("prob_congestion", self.prob_congestion),
             ("prob_auditoria", self.prob_auditoria),
         ]:
             if not 0 <= valor <= 1:
                 raise ValueError(f"{nombre} debe estar entre 0 y 1.")
+
+        suma_circuitos = self.prob_circuito_2 + self.prob_circuito_4 + self.prob_circuito_5
+        if abs(suma_circuitos - 1.0) > 1e-9:
+            raise ValueError("Las probabilidades de los circuitos deben sumar 1.")
 
         for nombre, valor in [
             ("media_demora_escaneo", self.media_demora_escaneo),
