@@ -69,7 +69,7 @@ class SimuladorEnvase:
         recorrido_2_o_5 = cantidad_sectores in (2, 5)
 
         rnd_parada = self.generador.rnd()
-        hay_parada = rnd_parada <= parametros.prob_parada_escaneo
+        hay_parada = rnd_parada < parametros.prob_parada_escaneo
         rnd_demora_parada = self.generador.rnd() if hay_parada else None
         demora_escaneo = (
             exponencial_desde_rnd(parametros.media_demora_escaneo, rnd_demora_parada)
@@ -79,13 +79,13 @@ class SimuladorEnvase:
 
         if recorrido_2_o_5:
             rnd_congestion = self.generador.rnd()
-            hay_congestion = rnd_congestion <= parametros.prob_congestion
+            hay_congestion = rnd_congestion < parametros.prob_congestion
         else:
             rnd_congestion = None
             hay_congestion = False
 
         rnd_auditoria = self.generador.rnd()
-        hay_auditoria = rnd_auditoria <= parametros.prob_auditoria
+        hay_auditoria = rnd_auditoria < parametros.prob_auditoria
         rnd_demora_auditoria = self.generador.rnd() if hay_auditoria else None
         demora_auditoria = (
             exponencial_desde_rnd(parametros.media_demora_auditoria, rnd_demora_auditoria)
