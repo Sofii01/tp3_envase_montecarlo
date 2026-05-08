@@ -160,18 +160,23 @@ except Exception as error:
 Soporte formato horario
 """
 def formato_tiempo(minutos_decimal):
-    """Convierte minutos decimales a formato MM:SS o HH:MM:SS"""
+    """Convierte minutos decimales a formato MM:SS o HH:MM:SS.
+
+    Usa round() en lugar de int() para los segundos, evitando que valores
+    cercanos al siguiente segundo (ej: 0.9977 s) se trunquen a 0.
+    Si el redondeo produce 60 s, se incrementa el minuto para evitar "X:60".
+    """
     if minutos_decimal is None or minutos_decimal < 0:
         return "0:00"
-    
+
+    total_segundos = round(minutos_decimal * 60)  # redondeo al segundo más cercano
+
     if minutos_decimal < 60:
-        minutos = int(minutos_decimal)
-        segundos = int((minutos_decimal - minutos) * 60)
+        minutos, segundos = divmod(total_segundos, 60)
         return f"{minutos}:{segundos:02d}"
     else:
-        horas = int(minutos_decimal // 60)
-        minutos = int(minutos_decimal % 60)
-        segundos = int((minutos_decimal - int(minutos_decimal)) * 60)
+        horas, resto = divmod(total_segundos, 3600)
+        minutos, segundos = divmod(resto, 60)
         return f"{horas}:{minutos:02d}:{segundos:02d}"
 
 
