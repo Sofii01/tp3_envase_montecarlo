@@ -205,8 +205,7 @@ a2.metric("Prom. demora escaneo", formato_tiempo(resultados['Variable adicional 
 a3.metric("Prom. demora auditoría", formato_tiempo(resultados['Variable adicional 3 - Promedio demora auditoría cuando hubo auditoría']))
 a4.metric(
     "Prom. traslado con congestión",
-    f"{resultados['Variable adicional 4 - Promedio traslado cuando hubo congestión']:.2f} min",
-)
+    formato_tiempo(resultados['Variable adicional 4 - Promedio traslado cuando hubo congestión']))
 
 vector_visible = pd.DataFrame([fila.a_diccionario_visible() for fila in resultado.filas_seleccionadas])
 fila_n = pd.DataFrame([resultado.fila_final.a_diccionario_visible()])
